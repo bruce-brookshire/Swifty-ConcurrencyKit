@@ -1,5 +1,5 @@
-// AsyncTasks.swift
-// Description: An API based on Java's Executor service API
+// ExecutorService.swift
+// Description: An API based on Java's ExecutorService API
 //
 // Created by: Bruce Brookshire
 //
@@ -104,10 +104,8 @@ fileprivate class SwiftyThread: Thread
     override func main() {
         while (true) {
             if let task = swifty_delegate.getNextTask(){
-                print("executing", Thread.current.name!)
                 task()
             } else {
-                print("pausing")
                 Thread.sleep(forTimeInterval: 2)
             }
         }
