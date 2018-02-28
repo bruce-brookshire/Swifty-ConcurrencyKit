@@ -10,11 +10,17 @@ fileprivate protocol SwiftyThreadDelegate {
     func getNextTask() -> (() -> Void)?
 }
 
+///ExecutorService uses a specified number of threads to run tasks asynchronously in the background
+///Tasks can be runnable or callable, the latter being fulfilled through a potentially blocking call to Future.get()
+///It is recommended that Future.get() for Callables only be called after all tasks first submitted for processing.
 final class ExecutorService: SwiftyThreadDelegate
 {
     private var threads: [SwiftyThread]
     private var queue: ArrayBlockingQueue<() -> Void>
     
+    ///Initializes ExecutorService to be able to process submitted tasks
+    /// - parameter threadCount: Number of threads to utilize in processing. Default is 1
+    /// - parameter qos: Quality of service with which to process submitted tasks. Default is .default
     init (threadCount: Int = 1, qos: QualityOfService = .default) {
         threads = []
         queue = ArrayBlockingQueue()
@@ -24,15 +30,13 @@ final class ExecutorService: SwiftyThreadDelegate
             threads[i].name = String(i)
         }
         
-        for thread in threads {
-            thread.start()
-        }
+        for thread in threads { thread.start() }
     }
     
-    deinit {
-        shutdownNow()
-    }
+    deinit { if threads.count > 0 { shutdownNow() } }
     
+    ///Delegate method for a SwiftyThread to retreive the next processable entity
+    /// - returns: A processable entity. If nil, there was no process to complete
     func getNextTask() -> (() -> Void)? {
         queue.lock()
         defer {queue.unlock()}
@@ -44,27 +48,18 @@ final class ExecutorService: SwiftyThreadDelegate
         }
     }
     
-    func submit<T>(_ callable: Callable<T>) -> Future<T> {
-        queue.lock()
-        defer {queue.unlock()}
-        
-        let future = Future<T>()
-        let task = { future.set(t: callable.call()) }
-        
-        queue.insert(task)
-        
-        return future
-    }
+    ///Submit a callable for execution
+    /// - parameter callable: A Callable that processes and returns an entity
+    /// - returns: A Future to the entity returned from Callable
+    func submit<T>(_ callable: Callable<T>) -> Future<T> { return submit(callable.call) }
     
-    func submit(_ runnable: Runnable) {
-        queue.lock()
-        defer {queue.unlock()}
-        
-        let task = { runnable.run() }
-        
-        queue.insert(task)
-    }
+    ///Submit a Runnable for execution
+    /// - parameter runnable: A Runnable that processes a task
+    func submit(_ runnable: Runnable) { submit(runnable.run) }
     
+    ///Submit a callable for execution
+    /// - parameter lambda: A callable that processes and returns an entity
+    /// - returns: A Future to the entity returned from lambda
     func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
         queue.lock()
         defer {queue.unlock()}
@@ -77,6 +72,8 @@ final class ExecutorService: SwiftyThreadDelegate
         return future
     }
     
+    ///Submit a task for execution
+    /// - parameter task: A runnable that processes a task
     func submit(_ task: @escaping () -> Void) {
         queue.lock()
         defer {queue.unlock()}
@@ -84,67 +81,46 @@ final class ExecutorService: SwiftyThreadDelegate
         queue.insert(task)
     }
     
+    ///Shutdown current threads managed by the ExecutorService
     func shutdownNow() {
         for thread in threads {
             thread.cancel()
         }
+        for thread in threads {
+            print(thread.isCancelled)
+        }
+        threads = []
     }
 }
 
+///Custom Thread class to be able to retrieve tasks to process utilizing
+///     a work stealing approach
 fileprivate class SwiftyThread: Thread
 {
     private var swifty_delegate: SwiftyThreadDelegate
     
+    ///Submit a callable for execution
+    /// - parameter delegate: Protocol that delivers the source of tasks to process
+    /// - parameter qos: Service quality to be performed by the thread
     init(delegate: SwiftyThreadDelegate, qos: QualityOfService) {
         self.swifty_delegate = delegate
         super.init()
         qualityOfService = qos
     }
     
+    ///Hook method overriden from Thread to perform execution.
+    ///     accesses delegate for task supply. If there is no task to perform,
+    ///     Thread sleeps for 1/100th of a second.
     override func main() {
         while (true) {
-            if let task = swifty_delegate.getNextTask(){
-                task()
-            } else {
-                Thread.sleep(forTimeInterval: 2)
-            }
+            if let task = swifty_delegate.getNextTask() { task() }
+            else { Thread.sleep(forTimeInterval: 0.01) }
         }
     }
 }
 
-class Runnable
-{
-    func run() {
-        print("ran base")
-    }
-}
+///Template class. Implement and override run() to submit a task to ExecutorService
+class Runnable { func run() {} }
 
-class Callable<T>
-{
-    func call() -> T? {
-        print("called base")
-        return nil
-    }
-}
-
-class Future<T>
-{
-    private var future: T?
-    private var futureLock: NSLock
-    
-    fileprivate init() {
-        self.futureLock = NSLock()
-        futureLock.lock()
-    }
-    
-    func get() -> T? {
-        while (!futureLock.try()) { }
-        defer {futureLock.unlock()}
-        return future
-    }
-    
-    fileprivate func set(t: T?) {
-        future = t
-        defer {futureLock.unlock()}
-    }
-}
+///Template class. Implement and override call() -> T? to submit a task to ExecutorService
+class Callable<T> { func call() -> T? { return nil } }
