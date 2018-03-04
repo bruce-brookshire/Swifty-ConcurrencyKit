@@ -7,7 +7,7 @@
 import Foundation
 
 fileprivate protocol SwiftyThreadDelegate {
-    func getNextTask() -> (() -> Void)?
+    func getNextTask() -> (() -> Void)
 }
 
 ///ExecutorService uses a specified number of threads to run tasks asynchronously in the background
@@ -37,15 +37,8 @@ final class ExecutorService: SwiftyThreadDelegate
     
     ///Delegate method for a SwiftyThread to retreive the next processable entity
     /// - returns: A processable entity. If nil, there was no process to complete
-    func getNextTask() -> (() -> Void)? {
-        queue.lock()
-        defer {queue.unlock()}
-        
-        if queue.size() > 0 {
-            return queue.next()
-        } else {
-            return nil
-        }
+    func getNextTask() -> (() -> Void) {
+        return queue.next()
     }
     
     ///Submit a callable for execution
@@ -61,23 +54,16 @@ final class ExecutorService: SwiftyThreadDelegate
     /// - parameter lambda: A callable that processes and returns an entity
     /// - returns: A Future to the entity returned from lambda
     func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
-        queue.lock()
-        defer {queue.unlock()}
-        
         let future = Future<T>()
         let task = { future.set(t: lambda()) }
         
         queue.insert(task)
-        
         return future
     }
     
     ///Submit a task for execution
     /// - parameter task: A runnable that processes a task
     func submit(_ task: @escaping () -> Void) {
-        queue.lock()
-        defer {queue.unlock()}
-        
         queue.insert(task)
     }
     
@@ -113,8 +99,7 @@ fileprivate class SwiftyThread: Thread
     ///     Thread sleeps for 1/100th of a second.
     override func main() {
         while (true) {
-            if let task = swifty_delegate.getNextTask() { task() }
-            else { Thread.sleep(forTimeInterval: 0.01) }
+            swifty_delegate.getNextTask()()
         }
     }
 }

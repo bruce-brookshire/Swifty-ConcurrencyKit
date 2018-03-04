@@ -202,7 +202,6 @@ final class ParallelStream<T> {
     }
 }
 
-
 extension Array {
     func toStream() -> Stream<Element> {
         return Stream(array: self)

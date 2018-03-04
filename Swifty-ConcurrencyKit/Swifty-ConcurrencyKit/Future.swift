@@ -12,24 +12,24 @@ import Foundation
 class Future<T>
 {
     private var future: T?
-    private var m: pthread_mutex_t
+    private var s: DispatchSemaphore
     
     init() {
-        m = pthread_mutex_t()
-        pthread_mutex_lock(&m)
+        s = DispatchSemaphore(value: 1)
+        s.wait()
     }
     
     ///Use this method to block until the result is available.
     func get() -> T? {
-        pthread_mutex_lock(&m)
-        defer {pthread_mutex_unlock(&m)}
+        s.wait()
+        defer { s.signal() }
         return future
     }
     
     ///If you did not create the object, do not use this method.
     ///Otherwise, behavior will be undefined.
     func set(t: T?) {
-        defer {pthread_mutex_unlock(&m)}
+        defer { s.signal() }
         future = t
     }
 }
