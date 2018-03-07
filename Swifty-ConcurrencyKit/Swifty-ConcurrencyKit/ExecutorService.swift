@@ -1,11 +1,14 @@
-// ExecutorService.swift
-// Description: An API based on Java's ExecutorService API
 //
-// Created by: Bruce Brookshire
+//  ExecutorService.swift
+//  Swifty-ConcurrencyKit
+//
+//  Created by Bruce Brookshire on 2/27/18.
+//  Copyright © 2018 bruce-brookshire.com. All rights reserved.
 //
 
 import Foundation
 
+///Protocol for SwiftyThread to communicate with its ExecutorService owner
 fileprivate protocol SwiftyThreadDelegate {
     func getNextTask() -> (() -> Void)
 }

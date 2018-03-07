@@ -1,3 +1,10 @@
+//
+//  Stream.swift
+//  Swifty-ConcurrencyKit
+//
+//  Created by Bruce Brookshire on 2/27/18.
+//  Copyright © 2018 bruce-brookshire.com. All rights reserved.
+//
 
 final class Stream<T> {
     
