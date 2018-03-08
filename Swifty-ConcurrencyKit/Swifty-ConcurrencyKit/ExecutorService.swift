@@ -19,14 +19,14 @@ fileprivate protocol SwiftyThreadDelegate {
 final class ExecutorService: SwiftyThreadDelegate
 {
     private var threads: [SwiftyThread]
-    private var queue: ArrayBlockingQueue<() -> Void>
+    private var queue: BlockingQueue<() -> Void>
     
     ///Initializes ExecutorService to be able to process submitted tasks
     /// - parameter threadCount: Number of threads to utilize in processing. Default is 1
     /// - parameter qos: Quality of service with which to process submitted tasks. Default is .default
     init (threadCount: Int = 1, qos: QualityOfService = .default) {
         threads = []
-        queue = ArrayBlockingQueue()
+        queue = BlockingQueue()
         
         for i in 0..<threadCount {
             threads.append(SwiftyThread(delegate: self, qos: qos))
@@ -40,7 +40,7 @@ final class ExecutorService: SwiftyThreadDelegate
     
     ///Delegate method for a SwiftyThread to retreive the next processable entity
     /// - returns: A processable entity. If nil, there was no process to complete
-    func getNextTask() -> (() -> Void) {
+    fileprivate func getNextTask() -> (() -> Void) {
         return queue.next()
     }
     
@@ -68,6 +68,13 @@ final class ExecutorService: SwiftyThreadDelegate
     /// - parameter task: A runnable that processes a task
     func submit(_ task: @escaping () -> Void) {
         queue.insert(task)
+    }
+    
+    ///Change the quality of service of threads to change execution speed
+    func changeThreadQualityOfService(qualityOfService: QualityOfService) {
+        for thread in threads {
+            thread.qualityOfService = qualityOfService
+        }
     }
     
     ///Shutdown current threads managed by the ExecutorService

@@ -10,9 +10,7 @@ final class Stream<T> {
     
     fileprivate var operations: [(() -> T?)]
     
-    init () {
-        operations = []
-    }
+    init () { operations = [] }
     
     init (array elements: [T]) {
         operations = []
