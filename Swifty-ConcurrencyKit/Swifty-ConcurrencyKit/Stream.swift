@@ -16,9 +16,7 @@ final class Stream<T> {
     /// - parameter elements: Elements to perform operations on
     init (array elements: [T]) {
         operations = []
-        for element in elements {
-            operations.append({ return element })
-        }
+        for element in elements { operations.append({ return element }) }
     }
     
     ///For easy initialization in map
@@ -36,20 +34,14 @@ final class Stream<T> {
     ///Completion stage function to perform an operation for each path in the Stream
     /// - parameter lambda: the operation to perform
     func forEach(_ lambda: @escaping (T) -> Void){
-        for operation in operations {
-            if let operation = operation() {
-                lambda(operation)
-            }
-        }
+        for operation in operations { if let operation = operation() { lambda(operation) } }
     }
     
     ///Intermediate operation function to apply an operation to each element in the Stream
     /// - parameter lambda: operation to apply
     /// - returns: self to continue chaining operations
     func apply(_ lambda: @escaping (T) -> T) -> Stream<T> {
-        for i in 0..<operations.count {
-            operations[i] = addLambda(first: operations[i], second: lambda)
-        }
+        for i in 0..<operations.count { operations[i] = addLambda(first: operations[i], second: lambda) }
         return self
     }
     
@@ -58,9 +50,7 @@ final class Stream<T> {
     /// - returns: a new Stream with completion stage result of type B to continue chaining operations
     func map<B>(_ lambda: @escaping (T) -> B) -> Stream<B>  {
         var newOperations: [(() -> B?)] = []
-        for operation in operations {
-            newOperations.append(addLambda(first: operation, second: lambda))
-        }
+        for operation in operations { newOperations.append(addLambda(first: operation, second: lambda)) }
         return Stream<B>(operations: &newOperations)
     }
     
@@ -71,11 +61,8 @@ final class Stream<T> {
         for i in 0..<operations.count {
             operations[i] = {
                 let element = self.operations[i]()
-                if element != nil, lambda(element!) {
-                    return element
-                } else {
-                    return nil
-                }
+                if element != nil, lambda(element!) { return element }
+                else { return nil }
             }
         }
         return self
@@ -85,22 +72,15 @@ final class Stream<T> {
     /// - returns: An array of elements resulting from each operation submitted to the Stream
     func collect() -> [T] {
         var results: [T] = []
-        for operation in operations {
-            if let result = operation() {
-                results.append(result)
-            }
-        }
+        for operation in operations { if let result = operation() { results.append(result) } }
         return results
     }
     
     ///Composition function (helper function)
     private func addLambda<B>(first: @escaping () -> T?, second: @escaping (T) -> B?) -> (() -> B?) {
         return {
-            if let first = first() {
-                return second(first)
-            } else {
-                return nil
-            }
+            if let first = first() { return second(first) }
+            else { return nil }
         }
     }
     

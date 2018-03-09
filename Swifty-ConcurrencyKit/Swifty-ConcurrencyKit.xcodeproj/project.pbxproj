@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		6DADB0E72045319400ABBABA /* Swifty_ConcurrencyKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 6DADB0E52045319400ABBABA /* Swifty_ConcurrencyKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6DADB0F62045325300ABBABA /* ExecutorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DADB0F32045325300ABBABA /* ExecutorService.swift */; };
-		6DADB0F72045325300ABBABA /* ArrayBlockingQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DADB0F42045325300ABBABA /* ArrayBlockingQueue.swift */; };
+		6DADB0F72045325300ABBABA /* BlockingQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DADB0F42045325300ABBABA /* BlockingQueue.swift */; };
 		6DADB0F82045325300ABBABA /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DADB0F52045325300ABBABA /* Stream.swift */; };
 		6DCB0F702045E19A0013F874 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DCB0F6F2045E19A0013F874 /* Future.swift */; };
 /* End PBXBuildFile section */
@@ -19,7 +19,7 @@
 		6DADB0E52045319400ABBABA /* Swifty_ConcurrencyKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Swifty_ConcurrencyKit.h; sourceTree = "<group>"; };
 		6DADB0E62045319400ABBABA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6DADB0F32045325300ABBABA /* ExecutorService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExecutorService.swift; sourceTree = "<group>"; };
-		6DADB0F42045325300ABBABA /* ArrayBlockingQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayBlockingQueue.swift; sourceTree = "<group>"; };
+		6DADB0F42045325300ABBABA /* BlockingQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlockingQueue.swift; sourceTree = "<group>"; };
 		6DADB0F52045325300ABBABA /* Stream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
 		6DCB0F6F2045E19A0013F874 /* Future.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -56,7 +56,7 @@
 			children = (
 				6DADB0E52045319400ABBABA /* Swifty_ConcurrencyKit.h */,
 				6DADB0F32045325300ABBABA /* ExecutorService.swift */,
-				6DADB0F42045325300ABBABA /* ArrayBlockingQueue.swift */,
+				6DADB0F42045325300ABBABA /* BlockingQueue.swift */,
 				6DCB0F6F2045E19A0013F874 /* Future.swift */,
 				6DADB0F52045325300ABBABA /* Stream.swift */,
 				6DADB0E62045319400ABBABA /* Info.plist */,
@@ -145,7 +145,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6DADB0F82045325300ABBABA /* Stream.swift in Sources */,
-				6DADB0F72045325300ABBABA /* ArrayBlockingQueue.swift in Sources */,
+				6DADB0F72045325300ABBABA /* BlockingQueue.swift in Sources */,
 				6DCB0F702045E19A0013F874 /* Future.swift in Sources */,
 				6DADB0F62045325300ABBABA /* ExecutorService.swift in Sources */,
 			);

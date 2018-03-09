@@ -1,5 +1,5 @@
 //
-//  ArrayBlockingQueue.swift
+//  BlockingQueue.swift
 //  Swifty-ConcurrencyKit
 //
 //  Created by Bruce Brookshire on 2/27/18.
