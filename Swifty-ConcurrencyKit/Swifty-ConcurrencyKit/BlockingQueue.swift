@@ -12,7 +12,6 @@
 ///BlockingQueue will block the current thread until a task is available.
 class BlockingQueue<T>
 {
-    
     ///Node for the linked list implementation of our queue
     private class Node<T> {
         var value: T
@@ -76,9 +75,34 @@ class BlockingQueue<T>
         pthread_mutex_lock(&m)
         defer { pthread_mutex_unlock(&m) }
         
-        while(size == 0) {
-            pthread_cond_wait(&q_not_empty, &m)
+        while(size == 0) { pthread_cond_wait(&q_not_empty, &m) }
+        
+        return getNext()
+    }
+    
+    ///Attempts to return the next available element in the queue, but times out after the
+    ///specified number of seconds waiting on an empty queue and returns nil
+    /// - parameter waitTimeSeconds: The number of seconds to wait on an empty queue before returning.
+    /// - returns: Either the next element in the queue, or nil if timed out
+    func timedNext(waitTimeSeconds: Int) -> T? {
+        pthread_mutex_lock(&m)
+        defer { pthread_mutex_unlock(&m) }
+        
+        let currentTime = Date()
+        var timeLeft = waitTimeSeconds //Make mutable
+        
+        while(size == 0 && timeLeft > 0) {
+            var timeSpec = timespec(tv_sec: time(nil) + timeLeft, tv_nsec: 0)
+            let result = pthread_cond_timedwait(&q_not_empty, &m, &timeSpec)
+            
+            //Timed out without a spurious wakeup
+            if result != 0 { return nil }
+                //calculate time left because of spurious wakeup
+            else { timeLeft = waitTimeSeconds + Int(currentTime.timeIntervalSinceNow) }
         }
+        
+        //Timed out with a spurious wakeup
+        if timeLeft <= 0 { return nil }
         
         return getNext()
     }
@@ -124,5 +148,3 @@ class BlockingQueue<T>
         return size
     }
 }
-
-

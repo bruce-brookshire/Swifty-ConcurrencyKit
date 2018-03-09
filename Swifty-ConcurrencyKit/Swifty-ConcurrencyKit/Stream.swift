@@ -127,7 +127,7 @@ final class ParallelStream<T> {
     ///Executes all operations in parallel
     /// - parameter lambda: the operation to perform
     func forEach(_ lambda: @escaping (T) -> Void) {
-        let execService = createExecServe()
+        let execService = ExecutorService()
         for operation in operations {
             let newOp = {
                 let result = operation()
@@ -145,7 +145,7 @@ final class ParallelStream<T> {
         var results: [T] = []
         var futures: [Future<T>] = []
         
-        let execService = createExecServe()
+        let execService = ExecutorService()
         
         for operation in operations { futures.append(execService.submit(operation)) }
         
@@ -213,16 +213,6 @@ final class ParallelStream<T> {
             } else {
                 return nil
             }
-        }
-    }
-    
-    ///Helper method to form a device-tailored ExecutorService
-    private func createExecServe() -> ExecutorService {
-        let processors = ProcessInfo.processInfo.activeProcessorCount
-        if operations.count > processors {
-            return ExecutorService(threadCount: processors > 1 ? processors - 1 : 1, qos: .default)
-        } else {
-            return ExecutorService(threadCount: operations.count, qos: .default)
         }
     }
 }

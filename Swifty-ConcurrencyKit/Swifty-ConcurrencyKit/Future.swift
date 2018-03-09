@@ -6,7 +6,6 @@
 //  Copyright © 2018 bruce-brookshire.com. All rights reserved.
 //
 
-import Foundation
 
 ///Vehicle to deliver an object after asynchronous processing is complete
 class Future<T>
