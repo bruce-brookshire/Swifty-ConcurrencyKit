@@ -15,7 +15,7 @@ fileprivate protocol SwiftyThreadDelegate {
 ///ExecutorService uses a specified number of threads to run tasks asynchronously in the background
 ///Tasks can be runnable or callable, the latter being fulfilled through a potentially blocking call to Future.get()
 ///It is recommended that Future.get() for Callables only be called after all tasks first submitted for processing.
-open class ExecutorService: SwiftyThreadDelegate
+public class ExecutorService: SwiftyThreadDelegate
 {
     ///Worker threads for the tasks submitted to the queue
     private var threads: [SwiftyThread]
@@ -132,7 +132,7 @@ open class ExecutorService: SwiftyThreadDelegate
     ///Adds the specified number of threads to the pool
     /// - parameter quantity: Number of threads to add
     /// - throws: if quantity <= 0
-    func addThreads(quantity: Int) throws {
+    public func addThreads(quantity: Int) throws {
         guard !isShutdown else {
             throw ExecutorServiceError.IllegalState("You are modifying a shutdown executor!")
         }
@@ -156,7 +156,7 @@ open class ExecutorService: SwiftyThreadDelegate
     ///Removes the specified number of threads from the pool
     /// - parameter quantity: Number of threads to remove
     /// - throws: if quantity <= 0 or > existing thread pool size
-    func reduceThreads(quantity: Int) throws {
+    public func reduceThreads(quantity: Int) throws {
         guard !isShutdown else {
             throw ExecutorServiceError.IllegalState("You are modifying a shutdown executor!")
         }
@@ -189,16 +189,16 @@ open class ExecutorService: SwiftyThreadDelegate
     ///Submit a callable for execution
     /// - parameter callable: A Callable that processes and returns an entity
     /// - returns: A Future to the entity returned from Callable
-    func submit<T>(_ callable: Callable<T>) -> Future<T> { return submit(callable.call) }
+    public func submit<T>(_ callable: Callable<T>) -> Future<T> { return submit(callable.call) }
     
     ///Submit a Runnable for execution
     /// - parameter runnable: A Runnable that processes a task
-    func submit(_ runnable: Runnable) { submit(runnable.run) }
+    public func submit(_ runnable: Runnable) { submit(runnable.run) }
     
     ///Submit a callable for execution
     /// - parameter lambda: A callable that processes and returns an entity
     /// - returns: A Future to the entity returned from lambda
-    func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
+    public func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
         guard !isShutdown else { print("You are submitting to a shutdown executor!"); return Future() }
         let future = Future<T>()
         let task = { future.set(t: lambda()) }
@@ -210,14 +210,14 @@ open class ExecutorService: SwiftyThreadDelegate
     
     ///Submit a task for execution
     /// - parameter task: A runnable that processes a task
-    func submit(_ task: @escaping () -> Void) {
+    public func submit(_ task: @escaping () -> Void) {
         guard !isShutdown else { print("You are submitting to a shutdown executor!"); return }
         queue.insert(task)
         scaleIfNecessary()
     }
     
     ///Shutdown current threads managed by the ExecutorService
-    func shutdownEventually() {
+    public func shutdownEventually() {
         isShutdown = true
         for thread in threads {
             thread.cancel()
@@ -225,7 +225,7 @@ open class ExecutorService: SwiftyThreadDelegate
         threads = []
     }
     
-    enum ExecutorServiceError: Error {
+    public enum ExecutorServiceError: Error {
         case InvalidValue(String)
         case IllegalState(String)
     }
@@ -266,7 +266,7 @@ fileprivate class SwiftyThread: Thread
 }
 
 ///Template class. Implement and override run() to submit a task to ExecutorService
-open class Runnable { func run() {} }
+open class Runnable { public func run() {} }
 
 ///Template class. Implement and override call() -> T? to submit a task to ExecutorService
-open class Callable<T> { func call() -> T? { return nil } }
+open class Callable<T> { public func call() -> T? { return nil } }

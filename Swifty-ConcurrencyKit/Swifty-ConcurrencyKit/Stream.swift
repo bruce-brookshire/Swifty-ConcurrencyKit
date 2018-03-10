@@ -7,7 +7,7 @@
 //
 
 ///Stream class allows for easy chaining of functional expressions
-open class Stream<T> {
+public class Stream<T> {
     
     ///Array of operations to perform
     fileprivate var operations: [(() -> T?)]
@@ -27,20 +27,20 @@ open class Stream<T> {
     
     ///Parallelizes the execution of this Stream
     /// - returns: A ParallelStream containing the same operations as self
-    func parallel() -> ParallelStream<T> {
+    public func parallel() -> ParallelStream<T> {
         return ParallelStream(stream: self)
     }
     
     ///Completion stage function to perform an operation for each path in the Stream
     /// - parameter lambda: the operation to perform
-    func forEach(_ lambda: @escaping (T) -> Void){
+    public func forEach(_ lambda: @escaping (T) -> Void){
         for operation in operations { if let operation = operation() { lambda(operation) } }
     }
     
     ///Intermediate operation function to apply an operation to each element in the Stream
     /// - parameter lambda: operation to apply
     /// - returns: self to continue chaining operations
-    func apply(_ lambda: @escaping (T) -> T) -> Stream<T> {
+    public func apply(_ lambda: @escaping (T) -> T) -> Stream<T> {
         for i in 0..<operations.count { operations[i] = addLambda(first: operations[i], second: lambda) }
         return self
     }
@@ -48,7 +48,7 @@ open class Stream<T> {
     ///Intermediate operation function to map an element to another type
     /// - parameter lambda: operation to map
     /// - returns: a new Stream with completion stage result of type B to continue chaining operations
-    func map<B>(_ lambda: @escaping (T) -> B) -> Stream<B>  {
+    public func map<B>(_ lambda: @escaping (T) -> B) -> Stream<B>  {
         var newOperations: [(() -> B?)] = []
         for operation in operations { newOperations.append(addLambda(first: operation, second: lambda)) }
         return Stream<B>(operations: &newOperations)
@@ -57,7 +57,7 @@ open class Stream<T> {
     ///Intermediate operation function to filter an element out of the Stream
     /// - parameter lambda: operation to filter elements
     /// - returns: self to continue chaining operations
-    func filter(_ lambda: @escaping (T) -> Bool) -> Stream<T> {
+    public func filter(_ lambda: @escaping (T) -> Bool) -> Stream<T> {
         for i in 0..<operations.count {
             operations[i] = {
                 let element = self.operations[i]()
@@ -70,7 +70,7 @@ open class Stream<T> {
     
     ///Executes all operations and collects the results into an array
     /// - returns: An array of elements resulting from each operation submitted to the Stream
-    func collect() -> [T] {
+    public func collect() -> [T] {
         var results: [T] = []
         for operation in operations { if let result = operation() { results.append(result) } }
         return results
@@ -97,7 +97,7 @@ open class Stream<T> {
 }
 
 ///ParallelStream class allows for easy chaining of functional expressions executed in parallel
-final class ParallelStream<T> {
+public class ParallelStream<T> {
     
     ///Array of operations to perform
     fileprivate var operations: [(() -> T?)]
@@ -113,7 +113,7 @@ final class ParallelStream<T> {
     
     ///Init a ParallelStream from a Stream
     /// - parameter stream: Stream to parallelize
-    init(stream: Stream<T>) {
+    public init(stream: Stream<T>) {
         self.operations = stream.operations
     }
     
@@ -126,7 +126,7 @@ final class ParallelStream<T> {
     ///Completion stage function to perform an operation for each path in the Stream.
     ///Executes all operations in parallel
     /// - parameter lambda: the operation to perform
-    func forEach(_ lambda: @escaping (T) -> Void) {
+    public func forEach(_ lambda: @escaping (T) -> Void) {
         let execService = ExecutorService()
         for operation in operations {
             let newOp = {
@@ -141,7 +141,7 @@ final class ParallelStream<T> {
     
     ///Executes all operations in parallel and collects the results into an array
     /// - returns: An array of elements resulting from each operation submitted to the ParallelStream
-    func collect() -> [T] {
+    public func collect() -> [T] {
         var results: [T] = []
         var futures: [Future<T>] = []
         
@@ -159,7 +159,7 @@ final class ParallelStream<T> {
     ///Intermediate operation function to apply an operation to each element in the Stream
     /// - parameter lambda: operation to apply
     /// - returns: self to continue chaining operations
-    func apply(_ lambda: @escaping (T) -> T) -> ParallelStream<T> {
+    public func apply(_ lambda: @escaping (T) -> T) -> ParallelStream<T> {
         for i in 0..<operations.count {
             operations[i] = addLambda(first: operations[i], second: lambda)
         }
@@ -169,7 +169,7 @@ final class ParallelStream<T> {
     ///Intermediate operation function to map an element to another type
     /// - parameter lambda: operation to map
     /// - returns: a new Stream with completion stage result of type B to continue chaining operations
-    func map<B>(_ lambda: @escaping (T) -> B) -> ParallelStream<B>  {
+    public func map<B>(_ lambda: @escaping (T) -> B) -> ParallelStream<B>  {
         var newOperations: [(() -> B?)] = []
         for operation in operations {
             newOperations.append(addLambda(first: operation, second: lambda))
@@ -180,7 +180,7 @@ final class ParallelStream<T> {
     ///Intermediate operation function to filter an element out of the Stream
     /// - parameter lambda: operation to filter elements
     /// - returns: self to continue chaining operations
-    func filter(_ lambda: @escaping (T) -> Bool) -> ParallelStream<T> {
+    public func filter(_ lambda: @escaping (T) -> Bool) -> ParallelStream<T> {
         for i in 0..<operations.count {
             operations[i] = {
                 let element = self.operations[i]()
@@ -220,13 +220,13 @@ final class ParallelStream<T> {
 extension Array {
     ///Turn self into a Stream of the same type as self
     /// - returns: Stream of the same type as self
-    func toStream() -> Stream<Element> {
+    public func toStream() -> Stream<Element> {
         return Stream(array: self)
     }
     
     ///Turn self into a ParallelStream of the same type as self
     /// - returns: ParallelStream of the same type as self
-    func toParallelStream() -> ParallelStream<Element> {
+    public func toParallelStream() -> ParallelStream<Element> {
         return ParallelStream(array: self)
     }
 }

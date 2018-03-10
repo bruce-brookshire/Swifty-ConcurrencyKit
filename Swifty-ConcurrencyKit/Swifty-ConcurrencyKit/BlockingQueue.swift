@@ -10,7 +10,7 @@
 ///only one thread at a time to access the queue at a time.
 ///If the queue is empty, instead of devising inefficient ways to spin and check,
 ///BlockingQueue will block the current thread until a task is available.
-open class BlockingQueue<T>
+public class BlockingQueue<T>
 {
     ///Node for the linked list implementation of our queue
     private class Node<T> {
@@ -50,7 +50,7 @@ open class BlockingQueue<T>
     }
     
     ///Inserts the element: T into the queue in a thread safe manner.
-    func insert(_ element: T) {
+    public func insert(_ element: T) {
         pthread_mutex_lock(&m)
         defer { pthread_mutex_unlock(&m) }
         
@@ -71,7 +71,7 @@ open class BlockingQueue<T>
     
     ///Pops the next element from the queue in a thread safe manner.
     /// - returns: The element popped from the front of the queue
-    func next() -> T {
+    public func next() -> T {
         pthread_mutex_lock(&m)
         defer { pthread_mutex_unlock(&m) }
         
@@ -84,7 +84,7 @@ open class BlockingQueue<T>
     ///specified number of seconds waiting on an empty queue and returns nil
     /// - parameter waitTimeSeconds: The number of seconds to wait on an empty queue before returning.
     /// - returns: Either the next element in the queue, or nil if timed out
-    func timedNext(waitTimeSeconds: Int) -> T? {
+    public func timedNext(waitTimeSeconds: Int) -> T? {
         pthread_mutex_lock(&m)
         defer { pthread_mutex_unlock(&m) }
         
@@ -110,7 +110,7 @@ open class BlockingQueue<T>
     ///Attemps to pop the next element from the queue in a thread safe manner.
     ///Only succeeds if the lock is uncontested and the queue is not empty
     /// - returns: The success of the operation and the element popped from the front of the queue (returns nil if failed)
-    func tryNext() -> (success: Bool, value: T?) {
+    public func tryNext() -> (success: Bool, value: T?) {
         let success = pthread_mutex_trylock(&m)
         if success != 0 || size == 0 { return (false, nil) }
         defer { pthread_mutex_unlock(&m) }
@@ -136,13 +136,13 @@ open class BlockingQueue<T>
     ///Gets the size of the queue. Operation is only a rough estimate, as it does not
     ///contest for a lock for an accurate value.
     /// - returns: A close estimate of the size of the queues
-    func unsafeGetSize() -> Int {
+    public func unsafeGetSize() -> Int {
         return size
     }
     
     ///Gets the size of the queue. Operation blocks until lock is acquired to provide an accurate size
     /// - returns: Size of the queue
-    func getSize() -> Int {
+    public func getSize() -> Int {
         pthread_mutex_lock(&m)
         defer { pthread_mutex_unlock(&m) }
         return size

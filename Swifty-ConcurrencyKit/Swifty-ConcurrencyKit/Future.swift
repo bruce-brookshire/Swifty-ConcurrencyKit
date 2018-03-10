@@ -8,7 +8,7 @@
 
 
 ///Vehicle to deliver an object after asynchronous processing is complete
-open class Future<T>
+public class Future<T>
 {
     ///The future value to deliver upon a blocking get()
     private var future: T?
@@ -25,7 +25,7 @@ open class Future<T>
     
     ///Use this method to block until the result is available.
     /// - returns: the value expected from the operation that created self: Future
-    func get() -> T? {
+    public func get() -> T? {
         s.wait()
         defer { s.signal() }
         return future
@@ -49,7 +49,7 @@ open class Future<T>
     ///If you did not create the object, do not use this method.
     ///Otherwise, behavior will be undefined. Results in the availability of the future.
     /// - parameter t: the value to set of type T
-    func set(t: T?) {
+    public func set(t: T?) {
         defer { s.signal() }
         future = t
     }
