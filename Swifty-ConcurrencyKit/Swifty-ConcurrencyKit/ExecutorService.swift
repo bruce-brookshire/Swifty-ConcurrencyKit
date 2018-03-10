@@ -266,7 +266,7 @@ fileprivate class SwiftyThread: Thread
 }
 
 ///Template class. Implement and override run() to submit a task to ExecutorService
-open class Runnable { public func run() {} }
+open class Runnable { open func run() {} }
 
 ///Template class. Implement and override call() -> T? to submit a task to ExecutorService
-open class Callable<T> { public func call() -> T? { return nil } }
+open class Callable<T> { open func call() -> T? { return nil } }
