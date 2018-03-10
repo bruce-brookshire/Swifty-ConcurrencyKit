@@ -18,7 +18,7 @@ open class Future<T>
     
     ///Initialises the semaphore such that when self is given to the user,
     ///get() only returns after the value is filled from the source given by the user.
-    init() {
+    public init() {
         s = DispatchSemaphore(value: 1)
         s.wait()
     }

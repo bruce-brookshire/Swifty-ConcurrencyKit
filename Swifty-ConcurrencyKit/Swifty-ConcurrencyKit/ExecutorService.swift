@@ -83,7 +83,7 @@ open class ExecutorService: SwiftyThreadDelegate
     ///Initializes ExecutorService to be able to process submitted tasks
     /// - parameter threadCount: Number of threads to utilize in processing. Default is 1
     /// - parameter qos: Quality of service with which to process submitted tasks. Default is .default
-    init (threadCount: Int? = nil, qos: QualityOfService = .default, autoScaling: Bool = true) {
+    public init (threadCount: Int? = nil, qos: QualityOfService = .default, autoScaling: Bool = true) {
         threads = []
         queue = BlockingQueue()
         self.autoScaling = autoScaling

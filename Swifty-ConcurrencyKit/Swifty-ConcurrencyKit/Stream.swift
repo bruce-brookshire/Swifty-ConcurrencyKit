@@ -14,7 +14,7 @@ open class Stream<T> {
     
     ///Create a Stream to perform operations on given elements
     /// - parameter elements: Elements to perform operations on
-    init (array elements: [T]) {
+    public init (array elements: [T]) {
         operations = []
         for element in elements { operations.append({ return element }) }
     }
@@ -104,7 +104,7 @@ final class ParallelStream<T> {
     
     ///Create a ParallelStream to perform operations on given elements
     /// - parameter elements: Elements to perform operations on
-    init (array elements: [T]) {
+    public init (array elements: [T]) {
         operations = []
         for element in elements {
             operations.append({ return element })

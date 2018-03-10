@@ -35,7 +35,7 @@ open class BlockingQueue<T>
     
     ///Initialize lock and condition variables to ensure that they are always available
     ///for use during the lifecycle of the queue.
-    init() {
+    public init() {
         m = pthread_mutex_t()
         pthread_mutex_init(&m, nil)
         q_not_empty = pthread_cond_t()
