@@ -17,24 +17,44 @@ fileprivate protocol SwiftyThreadDelegate {
 ///It is recommended that Future.get() for Callables only be called after all tasks first submitted for processing.
 final class ExecutorService: SwiftyThreadDelegate
 {
+    ///Worker threads for the tasks submitted to the queue
     private var threads: [SwiftyThread]
+    ///The queue of tasks
     private var queue: BlockingQueue<() -> Void>
+    ///Prevents multiple threads from modifying the ThreadPool at the same time
     private var threadQueueLock: NSLock = NSLock()
+    ///Counter to keep track of unique thread ID names
     private var threadId = 0
+    ///If the thread pool autoscales
     private var autoScaling: Bool
+    ///QualityOfService delivered by the threads in the ThreadPool
     private var qos: QualityOfService
+    ///Shutdown flag
+    var isShutdown: Bool
     
+    ///Returns if the thread pool will autoscale threads
     var isAutoScaling: Bool {
         get {
             return autoScaling
         }
         set {
             autoScaling = newValue
-            threadQueueLock.lock()
-            for thread in threads {
-                thread.isScalable = autoScaling
+            if threads.count == 0 {
+                let processors = ProcessInfo.processInfo.activeProcessorCount
+                do {
+                    try addThreads(quantity: (processors > 1 ? (processors - 1) : 1))
+                } catch {
+                    shutdownEventually()
+                    print("Unknown executor service issue. shutting down.")
+                }
+                
+            } else {
+                threadQueueLock.lock()
+                for thread in threads {
+                    thread.isScalable = autoScaling
+                }
+                threadQueueLock.unlock()
             }
-            threadQueueLock.unlock()
         }
     }
     
@@ -53,7 +73,8 @@ final class ExecutorService: SwiftyThreadDelegate
         }
     }
     
-    var numberOfValues: Int {
+    ///Number of working threads
+    var numberOfThreads: Int {
         get {
             return threads.count
         }
@@ -67,6 +88,7 @@ final class ExecutorService: SwiftyThreadDelegate
         queue = BlockingQueue()
         self.autoScaling = autoScaling
         self.qos = qos
+        self.isShutdown = false
         
         var threadCount = threadCount
         if threadCount == nil {
@@ -83,7 +105,8 @@ final class ExecutorService: SwiftyThreadDelegate
         for thread in threads { thread.start() }
     }
     
-    deinit { if threads.count > 0 { shutdownNow() } }
+    ///Shuts down the threads before exiting
+    deinit { if threads.count > 0 { shutdownEventually() } }
     
     ///Delegate method for a SwiftyThread to retreive the next processable entity
     /// - returns: A processable entity. If nil, there was no process to complete
@@ -91,51 +114,76 @@ final class ExecutorService: SwiftyThreadDelegate
         return queue.timedNext(waitTimeSeconds: 5)
     }
     
+    ///Scales the number of threads according to the size of the work queue
     private func scaleIfNecessary() {
-        if autoScaling && (queue.unsafeGetSize()/2) > threads.count {
+        if autoScaling && queue.unsafeGetSize()/2 > threads.count {
             threadQueueLock.lock()
-            threads.append(SwiftyThread(delegate: self, qos: qos, isScalable: autoScaling))
-            threads[threads.count - 1].name = String(threadId)
+            defer { threadQueueLock.unlock() }
+            
+            let thread = SwiftyThread(delegate: self, qos: qos, isScalable: autoScaling)
+            thread.name = String(threadId)
+            threads.append(thread)
+            thread.start()
+            
             threadId += 1
-            threadQueueLock.unlock()
         }
     }
     
+    ///Adds the specified number of threads to the pool
+    /// - parameter quantity: Number of threads to add
+    /// - throws: if quantity <= 0
     func addThreads(quantity: Int) throws {
+        guard !isShutdown else {
+            throw ExecutorServiceError.IllegalState("You are modifying a shutdown executor!")
+        }
+        
+        threadQueueLock.lock()
+        defer { threadQueueLock.unlock() }
+        
         if quantity <= 0 {
             throw ExecutorServiceError.InvalidValue("Cannot add a non-positive number of threads")
         } else {
-            threadQueueLock.lock()
             for _ in 0..<quantity {
-                threads.append(SwiftyThread(delegate: self, qos: qos, isScalable: autoScaling))
-                threads[threads.count - 1].name = String(threadId)
+                let thread = SwiftyThread(delegate: self, qos: qos, isScalable: autoScaling)
+                thread.name = String(threadId)
+                threads.append(thread)
+                thread.start()
                 threadId += 1
             }
-            threadQueueLock.unlock()
         }
     }
     
+    ///Removes the specified number of threads from the pool
+    /// - parameter quantity: Number of threads to remove
+    /// - throws: if quantity <= 0 or > existing thread pool size
     func reduceThreads(quantity: Int) throws {
+        guard !isShutdown else {
+            throw ExecutorServiceError.IllegalState("You are modifying a shutdown executor!")
+        }
+        
+        threadQueueLock.lock()
+        defer { threadQueueLock.unlock() }
+        
         if quantity <= 0 {
             throw ExecutorServiceError.InvalidValue("Cannot remove a non-positive number of threads")
         } else if quantity > threads.count {
             throw ExecutorServiceError.InvalidValue("Cannot remove more threads than exist")
         } else {
-            threadQueueLock.lock()
             for i in 0..<quantity {
                 threads[i].cancel()
             }
-            threadQueueLock.unlock()
         }
     }
     
+    ///Removes thread from active working thread array. Only works if thread is in ThreadPool
     fileprivate func timeOutThread() {
-        let name = Thread.current.name!
         threadQueueLock.lock()
+        defer { threadQueueLock.unlock() }
+        
+        let name = Thread.current.name!
         for i in 0..<threads.count {
             if threads[i].name! == name { threads.remove(at: i); break}
         }
-        threadQueueLock.unlock()
     }
     
     ///Submit a callable for execution
@@ -151,6 +199,7 @@ final class ExecutorService: SwiftyThreadDelegate
     /// - parameter lambda: A callable that processes and returns an entity
     /// - returns: A Future to the entity returned from lambda
     func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
+        guard !isShutdown else { print("You are submitting to a shutdown executor!"); return Future() }
         let future = Future<T>()
         let task = { future.set(t: lambda()) }
         
@@ -162,12 +211,14 @@ final class ExecutorService: SwiftyThreadDelegate
     ///Submit a task for execution
     /// - parameter task: A runnable that processes a task
     func submit(_ task: @escaping () -> Void) {
+        guard !isShutdown else { print("You are submitting to a shutdown executor!"); return }
         queue.insert(task)
         scaleIfNecessary()
     }
     
     ///Shutdown current threads managed by the ExecutorService
-    func shutdownNow() {
+    func shutdownEventually() {
+        isShutdown = true
         for thread in threads {
             thread.cancel()
         }
@@ -176,6 +227,7 @@ final class ExecutorService: SwiftyThreadDelegate
     
     enum ExecutorServiceError: Error {
         case InvalidValue(String)
+        case IllegalState(String)
     }
 }
 
