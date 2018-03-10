@@ -30,10 +30,10 @@ public class ExecutorService: SwiftyThreadDelegate
     ///QualityOfService delivered by the threads in the ThreadPool
     private var qos: QualityOfService
     ///Shutdown flag
-    var isShutdown: Bool
+    public var isShutdown: Bool
     
     ///Returns if the thread pool will autoscale threads
-    var isAutoScaling: Bool {
+    public var isAutoScaling: Bool {
         get {
             return autoScaling
         }
@@ -59,7 +59,7 @@ public class ExecutorService: SwiftyThreadDelegate
     }
     
     ///The quality of service of thread execution
-    var qualityOfService: QualityOfService {
+    public var qualityOfService: QualityOfService {
         get {
             return qos
         }
@@ -74,7 +74,7 @@ public class ExecutorService: SwiftyThreadDelegate
     }
     
     ///Number of working threads
-    var numberOfThreads: Int {
+    public var numberOfThreads: Int {
         get {
             return threads.count
         }
