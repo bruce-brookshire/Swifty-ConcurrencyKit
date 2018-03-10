@@ -10,7 +10,7 @@
 ///only one thread at a time to access the queue at a time.
 ///If the queue is empty, instead of devising inefficient ways to spin and check,
 ///BlockingQueue will block the current thread until a task is available.
-class BlockingQueue<T>
+public class BlockingQueue<T>
 {
     ///Node for the linked list implementation of our queue
     private class Node<T> {

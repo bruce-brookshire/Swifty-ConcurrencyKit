@@ -15,7 +15,7 @@ fileprivate protocol SwiftyThreadDelegate {
 ///ExecutorService uses a specified number of threads to run tasks asynchronously in the background
 ///Tasks can be runnable or callable, the latter being fulfilled through a potentially blocking call to Future.get()
 ///It is recommended that Future.get() for Callables only be called after all tasks first submitted for processing.
-final class ExecutorService: SwiftyThreadDelegate
+public class ExecutorService: SwiftyThreadDelegate
 {
     ///Worker threads for the tasks submitted to the queue
     private var threads: [SwiftyThread]
@@ -266,7 +266,7 @@ fileprivate class SwiftyThread: Thread
 }
 
 ///Template class. Implement and override run() to submit a task to ExecutorService
-class Runnable { func run() {} }
+public class Runnable { func run() {} }
 
 ///Template class. Implement and override call() -> T? to submit a task to ExecutorService
-class Callable<T> { func call() -> T? { return nil } }
+public class Callable<T> { func call() -> T? { return nil } }
