@@ -8,7 +8,7 @@
 
 
 ///Vehicle to deliver an object after asynchronous processing is complete
-public class Future<T>
+open class Future<T>
 {
     ///The future value to deliver upon a blocking get()
     private var future: T?

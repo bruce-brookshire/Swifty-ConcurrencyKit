@@ -7,7 +7,7 @@
 //
 
 ///Stream class allows for easy chaining of functional expressions
-public class Stream<T> {
+open class Stream<T> {
     
     ///Array of operations to perform
     fileprivate var operations: [(() -> T?)]
