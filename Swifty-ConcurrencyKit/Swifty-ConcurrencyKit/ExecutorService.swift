@@ -8,7 +8,6 @@
 
 ///Protocol for SwiftyThread to communicate with its ExecutorService owner
 fileprivate protocol SwiftyThreadDelegate {
-    func getNextTask() -> (() -> Void)?
     func timeOutThread()
 }
 
@@ -19,18 +18,24 @@ public class ExecutorService: SwiftyThreadDelegate
 {
     ///Worker threads for the tasks submitted to the queue
     private var threads: [SwiftyThread]
-    ///The queue of tasks
-    private var queue: BlockingQueue<() -> Void>
+    
     ///Prevents multiple threads from modifying the ThreadPool at the same time
     private var threadQueueLock: NSLock = NSLock()
+    
     ///Counter to keep track of unique thread ID names
     private var threadId = 0
+    
     ///If the thread pool autoscales
     private var autoScaling: Bool
+    
     ///QualityOfService delivered by the threads in the ThreadPool
     private var qos: QualityOfService
+    
     ///Shutdown flag
     public var isShutdown: Bool
+    
+    ///Insert index
+    public var insertIndex = 0
     
     ///Returns if the thread pool will autoscale threads
     public var isAutoScaling: Bool {
@@ -75,9 +80,7 @@ public class ExecutorService: SwiftyThreadDelegate
     
     ///Number of working threads
     public var numberOfThreads: Int {
-        get {
-            return threads.count
-        }
+        get { return threads.count }
     }
     
     ///Initializes ExecutorService to be able to process submitted tasks
@@ -85,7 +88,6 @@ public class ExecutorService: SwiftyThreadDelegate
     /// - parameter qos: Quality of service with which to process submitted tasks. Default is .default
     public init (threadCount: Int? = nil, qos: QualityOfService = .default, autoScaling: Bool = true) {
         threads = []
-        queue = BlockingQueue()
         self.autoScaling = autoScaling
         self.qos = qos
         self.isShutdown = false
@@ -108,15 +110,9 @@ public class ExecutorService: SwiftyThreadDelegate
     ///Shuts down the threads before exiting
     deinit { if threads.count > 0 { shutdownEventually() } }
     
-    ///Delegate method for a SwiftyThread to retreive the next processable entity
-    /// - returns: A processable entity. If nil, there was no process to complete
-    fileprivate func getNextTask() -> (() -> Void)? {
-        return queue.timedNext(waitTimeSeconds: 5)
-    }
-    
     ///Scales the number of threads according to the size of the work queue
     private func scaleIfNecessary() {
-        if autoScaling && queue.unsafeGetSize()/2 > threads.count {
+        if autoScaling && threads[insertIndex].taskqueue.unsafeGetSize() == 4 {
             threadQueueLock.lock()
             defer { threadQueueLock.unlock() }
             
@@ -189,22 +185,24 @@ public class ExecutorService: SwiftyThreadDelegate
     ///Submit a callable for execution
     /// - parameter callable: A Callable that processes and returns an entity
     /// - returns: A Future to the entity returned from Callable
-    public func submit<T>(_ callable: Callable<T>) -> Future<T> { return submit(callable.call) }
+    func submit<T>(_ callable: Callable<T>) -> Future<T> { return submit(callable.call) }
     
     ///Submit a Runnable for execution
     /// - parameter runnable: A Runnable that processes a task
-    public func submit(_ runnable: Runnable) { submit(runnable.run) }
+    func submit(_ runnable: Runnable) { submit(runnable.run) }
     
     ///Submit a callable for execution
     /// - parameter lambda: A callable that processes and returns an entity
     /// - returns: A Future to the entity returned from lambda
-    public func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
+    func submit<T>(_ lambda: @escaping () -> T?) -> Future<T> {
         guard !isShutdown else { print("You are submitting to a shutdown executor!"); return Future() }
         let future = Future<T>()
         let task = { future.set(t: lambda()) }
         
-        queue.insert(task)
+        threads[insertIndex].taskqueue.insert(task)
         scaleIfNecessary()
+        insertIndex = (insertIndex + 1) % threads.count
+        
         return future
     }
     
@@ -212,7 +210,11 @@ public class ExecutorService: SwiftyThreadDelegate
     /// - parameter task: A runnable that processes a task
     public func submit(_ task: @escaping () -> Void) {
         guard !isShutdown else { print("You are submitting to a shutdown executor!"); return }
-        queue.insert(task)
+        
+        threads[insertIndex].taskqueue.insert(task)
+        scaleIfNecessary()
+        insertIndex = (insertIndex + 1) % threads.count
+        
         scaleIfNecessary()
     }
     
@@ -223,6 +225,26 @@ public class ExecutorService: SwiftyThreadDelegate
             thread.cancel()
         }
         threads = []
+    }
+    
+    func blockTillFinished() {
+        var complete = false
+        
+        while !complete {
+            var partialCount = 0
+            
+            for i in 0..<threads.count {
+                if threads[i].taskqueue.unsafeGetSize() == 0 {
+                    partialCount += 1
+                } else {
+                    break
+                }
+            }
+            if partialCount == threads.count {
+                complete = true
+            }
+        }
+//        print("threads left", threads.count)
     }
     
     public enum ExecutorServiceError: Error {
@@ -237,6 +259,7 @@ fileprivate class SwiftyThread: Thread
 {
     private var swifty_delegate: SwiftyThreadDelegate
     fileprivate var isScalable: Bool
+    fileprivate var taskqueue: BlockingQueue<() -> Void>
     
     ///Submit a callable for execution
     /// - parameter delegate: Protocol that delivers the source of tasks to process
@@ -244,8 +267,13 @@ fileprivate class SwiftyThread: Thread
     init(delegate: SwiftyThreadDelegate, qos: QualityOfService, isScalable: Bool) {
         self.swifty_delegate = delegate
         self.isScalable = isScalable
+        self.taskqueue = BlockingQueue()
         super.init()
         qualityOfService = qos
+    }
+    
+    deinit {
+//        print("removed")
     }
     
     ///Hook method overriden from Thread to perform execution.
@@ -253,12 +281,10 @@ fileprivate class SwiftyThread: Thread
     ///     Thread blocks for 60s then shuts down.
     override func main() {
         while (!isCancelled) {
-            if let task = swifty_delegate.getNextTask() {
+            if let task = taskqueue.timedNext(waitTimeSeconds: 5) {
                 task()
             } else {
-                if isScalable {
-                    cancel()
-                }
+                if isScalable { cancel() }
             }
         }
         swifty_delegate.timeOutThread()
@@ -266,7 +292,13 @@ fileprivate class SwiftyThread: Thread
 }
 
 ///Template class. Implement and override run() to submit a task to ExecutorService
-open class Runnable { open func run() {} }
+open class Runnable {
+    open func run() {}
+    open func submitToExecutor(executor: ExecutorService) { executor.submit(self) }
+}
 
 ///Template class. Implement and override call() -> T? to submit a task to ExecutorService
-open class Callable<T> { open func call() -> T? { return nil } }
+open class Callable<T> {
+    open func call() -> T? { return nil }
+    open func submitToExecutor(executor: ExecutorService) -> Future<T> { return executor.submit(self) }
+}
